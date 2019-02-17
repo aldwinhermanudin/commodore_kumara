@@ -488,7 +488,9 @@ void USB::Task(void) //USB state machine
         for(uint8_t i = 0; i < USB_NUMDEVICES; i++)
                 if(devConfig[i])
                         rcode = devConfig[i]->Poll();
-
+		
+		
+		
         switch(usb_task_state) {
                 case USB_DETACHED_SUBSTATE_INITIALIZE:
                         init();
@@ -835,5 +837,44 @@ uint8_t USB::setAddr(uint8_t oldaddr, uint8_t ep, uint8_t newaddr) {
 //set configuration
 
 uint8_t USB::setConf(uint8_t addr, uint8_t ep, uint8_t conf_value) {
-        return ( ctrlReq(addr, ep, bmREQ_SET, USB_REQUEST_SET_CONFIGURATION, conf_value, 0x00, 0x0000, 0x0000, 0x0000, NULL, NULL));
+        return (ctrlReq(addr, ep, bmREQ_SET, USB_REQUEST_SET_CONFIGURATION, conf_value, 0x00, 0x0000, 0x0000, 0x0000, NULL, NULL));
+}
+ 
+
+const char* USB::printUSBState(uint8_t hex_value){
+	
+	switch(hex_value){
+		case(USB_STATE_DETACHED):
+			return state_detached; 
+		case(USB_DETACHED_SUBSTATE_INITIALIZE):
+			return detached_substate_initialize; 
+		case(USB_DETACHED_SUBSTATE_WAIT_FOR_DEVICE):
+			return detached_substate_wait_for_device; 
+		case(USB_DETACHED_SUBSTATE_ILLEGAL):
+			return detached_substate_illegal; 
+		case(USB_ATTACHED_SUBSTATE_SETTLE):
+			return attached_substate_settle; 
+		case(USB_ATTACHED_SUBSTATE_RESET_DEVICE):
+			return attached_substate_reset_device; 
+		case(USB_ATTACHED_SUBSTATE_WAIT_RESET_COMPLETE):
+			return attached_substate_wait_reset_complete; 
+		case(USB_ATTACHED_SUBSTATE_WAIT_SOF):
+			return attached_substate_wait_sof; 
+		case(USB_ATTACHED_SUBSTATE_WAIT_RESET):
+			return attached_substate_wait_reset; 
+		case(USB_ATTACHED_SUBSTATE_GET_DEVICE_DESCRIPTOR_SIZE):
+			return attached_substate_get_device_descriptor_size; 
+		case(USB_STATE_ADDRESSING):
+			return state_addressing; 
+		case(USB_STATE_CONFIGURING):
+			return state_configuring; 
+		case(USB_STATE_RUNNING):
+			return state_running; 
+		case(USB_STATE_ERROR):
+			return state_error;  
+	
+		default:
+			return "Unknown state";
+	}
+	
 }

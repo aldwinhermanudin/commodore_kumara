@@ -109,6 +109,21 @@ e-mail   :  support@circuitsathome.com
 #define USB_STATE_RUNNING                                   0x90
 #define USB_STATE_ERROR                                     0xa0
 
+const char state_detached[] ="USB_STATE_DETACHED";
+const char detached_substate_initialize[] ="USB_DETACHED_SUBSTATE_INITIALIZE";
+const char detached_substate_wait_for_device[] ="USB_DETACHED_SUBSTATE_WAIT_FOR_DEVICE";
+const char detached_substate_illegal[] ="USB_DETACHED_SUBSTATE_ILLEGAL";
+const char attached_substate_settle[] ="USB_ATTACHED_SUBSTATE_SETTLE";
+const char attached_substate_reset_device[] ="USB_ATTACHED_SUBSTATE_RESET_DEVICE";
+const char attached_substate_wait_reset_complete[] ="USB_ATTACHED_SUBSTATE_WAIT_RESET_COMPLETE";
+const char attached_substate_wait_sof[] ="USB_ATTACHED_SUBSTATE_WAIT_SOF";
+const char attached_substate_wait_reset[] ="USB_ATTACHED_SUBSTATE_WAIT_RESET";
+const char attached_substate_get_device_descriptor_size[] ="USB_ATTACHED_SUBSTATE_GET_DEVICE_DESCRIPTOR_SIZE";
+const char state_addressing[] ="USB_STATE_ADDRESSING";
+const char state_configuring[] ="USB_STATE_CONFIGURING";
+const char state_running[] ="USB_STATE_RUNNING";
+const char state_error[] ="USB_STATE_ERROR";
+
 // Base class for incoming data parser
 
 class USB : public Max3421e {
@@ -158,6 +173,8 @@ public:
 
         uint8_t ctrlReq(uint8_t addr, uint8_t ep, uint8_t bmReqType, uint8_t bRequest, uint8_t wValLo, uint8_t wValHi,
                 uint16_t wInd, uint16_t total, uint16_t nbytes, uint8_t* dataptr, USBReadParser *p);
+        
+        const char* printUSBState(uint8_t hex_value);
 
 private:
         void init();

@@ -222,7 +222,6 @@ void uhs_complete_test(void *pvParameter){
 		vTaskDelay(200 / 100);
         Usb.Task();
         usbstate = Usb.getUsbTaskState();
-        printf("USB State : %x\n",usbstate );
         if(usbstate != laststate) {
                 laststate = usbstate;
                 /**/
@@ -291,6 +290,7 @@ void uhs_complete_test(void *pvParameter){
                                 break;
 
                         default:
+								printf("USB State : %s\n",Usb.printUSBState(usbstate) );
                                 break;
                 } 
         }
