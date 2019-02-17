@@ -12,4 +12,4 @@
 - [x] Test usbhid code
 - [x] Port hiduniversal code
 - [x] Test simple Device Enumeration
-- [] Test HID Universal
+- [ ] Test HID Universal
