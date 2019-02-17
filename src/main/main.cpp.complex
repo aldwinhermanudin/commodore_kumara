@@ -1,0 +1,162 @@
+/*
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
+ * 
+ * Copyright 2017 Benjamin Aigner <beni@asterics-foundation.org>
+ */
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
+#include "esp_system.h"
+#include "esp_wifi.h"
+#include "esp_event_loop.h"
+#include "esp_log.h"
+#include "nvs_flash.h"
+#include "esp_bt.h"
+#include "driver/gpio.h"
+#include "Greeting.h"
+#include "SPI.h"
+#include "GPIO.h"
+//#include "max3421e.h"
+#include "Usb.h"
+
+#include "config.h"
+#include "HID_kbdmousejoystick.h"
+
+#include "esp_gap_ble_api.h"
+#include "driver/gpio.h"
+#include "driver/uart.h"
+#include "keyboard.h"
+
+#define MAX3421E_SCK 18
+#define MAX3421E_MISO 19
+#define MAX3421E_MOSI 23
+#define MAX3421E_SS 5
+#define MAX3421E_INT 17
+
+#ifndef ESP32
+#define ESP32
+#endif
+
+class Shape {
+	
+	public :
+		void Init(int length, int width, int height){
+			this->length = length;
+			this->width = width;
+			this->height = height;
+		}
+		
+		int length;
+		int width;
+		int height;
+	};
+	
+class Box : public Shape{
+	
+	public:
+		Box(int length, int width, int height){
+			Init(length, width, height);
+		}	
+};
+
+extern "C" void app_main();
+
+void dumb_task(void *pvParameter){ 
+    int blinkTime;
+    ESP32CPP::GPIO::setOutput((gpio_num_t) 2);
+    printf("dumb spi_task\n");
+    while(1) {
+		blinkTime=1000;
+		 
+		Greeting myGreeting("sanity_check");
+		myGreeting.setName("Aldwin");
+		myGreeting.helloEnglish();
+		myGreeting.helloFrench();
+	    vTaskDelay(blinkTime / portTICK_PERIOD_MS);
+	    
+		ESP32CPP::GPIO::low((gpio_num_t) 2);
+		
+	    vTaskDelay(blinkTime / portTICK_PERIOD_MS);
+	    
+		ESP32CPP::GPIO::high((gpio_num_t) 2);
+    }
+}
+
+void max_rev(void *pvParameter){ 
+    ESP32CPP::GPIO::setInput((gpio_num_t) MAX3421E_INT);
+    ESP32CPP::GPIO::setOutput((gpio_num_t) MAX3421E_SS);
+	ESP32CPP::GPIO::high((gpio_num_t) MAX3421E_SS); // Select slave
+
+	vTaskDelay(100 / 100);
+	
+	SPI max3421e_spi;
+	max3421e_spi.init(MAX3421E_MOSI,MAX3421E_MISO,MAX3421E_SCK,MAX3421E_SS);
+	
+	ESP32CPP::GPIO::low((gpio_num_t) MAX3421E_SS); // Select slave
+	max3421e_spi.transferByte(rPINCTL + 2);
+	max3421e_spi.transferByte( bmFDUPSPI+bmINTLEVEL+bmGPXB );
+	ESP32CPP::GPIO::high((gpio_num_t) MAX3421E_SS); // Select slave   
+	
+	while (1){ 
+		uint8_t a = 0;
+		vTaskDelay(100 / 100);
+		ESP32CPP::GPIO::low((gpio_num_t) MAX3421E_SS); // Select slave
+		
+		max3421e_spi.transferByte( rREVISION );      //send REVISION register address
+		a = max3421e_spi.transferByte( 0x00 );  //read next byte
+		
+		ESP32CPP::GPIO::high((gpio_num_t) MAX3421E_SS); // Select slave   
+		printf ("Revision Number : %x\n", a);
+		
+	}
+}
+
+void uhs_test(void *pvParameter){ 
+   
+   
+	typedef MAX3421e<P5, P17> MAX3421E; // ESP32 boards
+	MAX3421E max4321e_control;
+	
+	max4321e_control.Init();
+	vTaskDelay(1000 / 100);
+	
+	while (1){ 
+		uint8_t a = 0;
+		vTaskDelay(1000 / 100);
+		
+		a = max4321e_control.regRd(rREVISION);
+		
+		printf ("Revision Number : %x\n", a);
+		
+	}
+}
+
+
+
+void app_main(){
+	
+	Box kotak(3,2,2);
+	printf("Volume : %d\n", kotak.length*kotak.width*kotak.height);
+    // now start the tasks for processing UART input and indicator LED  
+    //xTaskCreate(&max_rev, "max_rev", 4096, NULL, configMAX_PRIORITIES, NULL);
+    xTaskCreate(&uhs_test, "uhs_test", 4096, NULL, configMAX_PRIORITIES, NULL);
+    //xTaskCreate(&dumb_task, "dumb_task", 2048, NULL, configMAX_PRIORITIES, NULL);
+}

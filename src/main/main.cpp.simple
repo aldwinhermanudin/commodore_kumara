@@ -1,0 +1,115 @@
+/*
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
+ * 
+ * Copyright 2017 Benjamin Aigner <beni@asterics-foundation.org>
+ */
+
+
+#include <driver/spi_master.h>
+#include <esp_log.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <driver/gpio.h>
+
+#include "sdkconfig.h"
+#include "max3421e.h" 
+
+static char tag[] = "test_spi";
+
+#define MAX3421E_SCK 18
+#define MAX3421E_MISO 19
+#define MAX3421E_MOSI 23
+#define MAX3421E_SS 5
+#define MAX3421E_INT 17
+
+extern "C" void app_main();
+
+
+
+void app_main(){
+	
+	spi_device_handle_t handle;
+	
+    ESP_LOGD(tag, ">> test_spi_task");
+
+	spi_bus_config_t bus_config;
+	bus_config.sclk_io_num 		= MAX3421E_SCK; // CLK
+	bus_config.mosi_io_num 		= MAX3421E_MOSI; // MOSI
+	bus_config.miso_io_num 		= MAX3421E_MISO; // MISO
+	bus_config.quadwp_io_num	= -1; // Not used
+	bus_config.quadhd_io_num 	= -1; // Not used
+	bus_config.max_transfer_sz 	= 0;       // 0 means use default.
+    bus_config.flags           	= (SPICOMMON_BUSFLAG_SCLK | SPICOMMON_BUSFLAG_MOSI | SPICOMMON_BUSFLAG_MISO);
+    
+	ESP_LOGI(tag, "... Initializing bus.");
+	ESP_ERROR_CHECK(spi_bus_initialize(VSPI_HOST, &bus_config, 1));
+
+	spi_device_interface_config_t dev_config;
+	dev_config.address_bits 	= 0;
+	dev_config.command_bits 	= 0;
+	dev_config.dummy_bits 		= 0;
+	dev_config.mode 			= 0;
+	dev_config.duty_cycle_pos 	= 0;
+	dev_config.cs_ena_posttrans = 0;
+	dev_config.cs_ena_pretrans	= 0;
+	dev_config.clock_speed_hz 	= SPI_MASTER_FREQ_26M;//10000;
+	dev_config.spics_io_num 	= MAX3421E_SS;
+	dev_config.flags 			= SPI_DEVICE_NO_DUMMY;// 0;
+	dev_config.queue_size 		= 1;
+	dev_config.pre_cb 			= NULL;
+	dev_config.post_cb 			= NULL;
+	ESP_LOGI(tag, "... Adding device bus.");
+	ESP_ERROR_CHECK(spi_bus_add_device(VSPI_HOST, &dev_config, &handle));
+
+	char data = rREVISION;
+	{
+		spi_transaction_t trans_desc;
+		//trans_desc.address = 0;
+		//trans_desc.command = 0;
+		trans_desc.flags = 0;
+		trans_desc.length = 1 * 8;
+		trans_desc.rxlength = 0;
+		trans_desc.tx_buffer = &data;
+		trans_desc.rx_buffer = &data;
+
+		ESP_LOGI(tag, "... Transmitting.");
+		ESP_ERROR_CHECK(spi_device_transmit(handle, &trans_desc));
+	}
+	
+	data = 0x0;
+	
+	{
+		spi_transaction_t trans_desc;
+		//trans_desc.address = 0;
+		//trans_desc.command = 0;
+		trans_desc.flags = 0;
+		trans_desc.length = 1 * 8;
+		trans_desc.rxlength = 0;
+		trans_desc.tx_buffer = &data;
+		trans_desc.rx_buffer = &data;
+
+		ESP_LOGI(tag, "... Transmitting.");
+		ESP_ERROR_CHECK(spi_device_transmit(handle, &trans_desc));
+	}
+	printf("Revision : %d\n", data);
+	ESP_LOGI(tag, "... Removing device.");
+	ESP_ERROR_CHECK(spi_bus_remove_device(handle));
+
+	ESP_LOGI(tag, "... Freeing bus.");
+	ESP_ERROR_CHECK(spi_bus_free(VSPI_HOST));
+
+	ESP_LOGD(tag, "<< test_spi_task");
+}
