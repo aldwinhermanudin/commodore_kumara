@@ -9,7 +9,7 @@
 * Working USB Enumeration
 
 # To-do List 
--[x] Test usbhid code
--[x] Port hiduniversal code
--[x] Test simple Device Enumeration
--[] Test HID Universal
+- [x] Test usbhid code
+- [x] Port hiduniversal code
+- [x] Test simple Device Enumeration
+- [] Test HID Universal
