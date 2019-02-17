@@ -34,6 +34,7 @@
 #include "Greeting.h"
 #include "Max3421e.h"
 #include "Usb.h"
+#include "hiduniversal.h"
 //#include "Test.h"
 
 #include "config.h"
@@ -47,6 +48,101 @@
 #ifndef ESP32
 #define ESP32
 #endif
+
+
+#define BUFSIZE 256    //buffer size
+#define LOBYTE(x) ((char*)(&(x)))[0]
+#define HIBYTE(x) ((char*)(&(x)))[1]
+
+
+
+/* Print strings in Program Memory */
+const char Gen_Error_str[] PROGMEM = "\r\nRequest error. Error code:\t"; 
+const char Dev_Header_str[] PROGMEM ="\r\nDevice descriptor: ";
+const char Dev_Length_str[] PROGMEM ="\r\nDescriptor Length:\t";
+const char Dev_Type_str[] PROGMEM ="\r\nDescriptor type:\t";
+const char Dev_Version_str[] PROGMEM ="\r\nUSB version:\t\t";
+const char Dev_Class_str[] PROGMEM ="\r\nDevice class:\t\t";
+const char Dev_Subclass_str[] PROGMEM ="\r\nDevice Subclass:\t";
+const char Dev_Protocol_str[] PROGMEM ="\r\nDevice Protocol:\t";
+const char Dev_Pktsize_str[] PROGMEM ="\r\nMax.packet size:\t";
+const char Dev_Vendor_str[] PROGMEM ="\r\nVendor  ID:\t\t";
+const char Dev_Product_str[] PROGMEM ="\r\nProduct ID:\t\t";
+const char Dev_Revision_str[] PROGMEM ="\r\nRevision ID:\t\t";
+const char Dev_Mfg_str[] PROGMEM ="\r\nMfg.string index:\t";
+const char Dev_Prod_str[] PROGMEM ="\r\nProd.string index:\t";
+const char Dev_Serial_str[] PROGMEM ="\r\nSerial number index:\t";
+const char Dev_Nconf_str[] PROGMEM ="\r\nNumber of conf.:\t";
+const char Conf_Trunc_str[] PROGMEM ="Total length truncated to 256 bytes";
+const char Conf_Header_str[] PROGMEM ="\r\nConfiguration descriptor:";
+const char Conf_Totlen_str[] PROGMEM ="\r\nTotal length:\t\t";
+const char Conf_Nint_str[] PROGMEM ="\r\nNum.intf:\t\t";
+const char Conf_Value_str[] PROGMEM ="\r\nConf.value:\t\t";
+const char Conf_String_str[] PROGMEM ="\r\nConf.string:\t\t";
+const char Conf_Attr_str[] PROGMEM ="\r\nAttr.:\t\t\t";
+const char Conf_Pwr_str[] PROGMEM ="\r\nMax.pwr:\t\t";
+const char Int_Header_str[] PROGMEM ="\r\n\r\nInterface descriptor:";
+const char Int_Number_str[] PROGMEM ="\r\nIntf.number:\t\t";
+const char Int_Alt_str[] PROGMEM ="\r\nAlt.:\t\t\t";
+const char Int_Endpoints_str[] PROGMEM ="\r\nEndpoints:\t\t";
+const char Int_Class_str[] PROGMEM ="\r\nIntf. Class:\t\t";
+const char Int_Subclass_str[] PROGMEM ="\r\nIntf. Subclass:\t\t";
+const char Int_Protocol_str[] PROGMEM ="\r\nIntf. Protocol:\t\t";
+const char Int_String_str[] PROGMEM ="\r\nIntf.string:\t\t";
+const char End_Header_str[] PROGMEM ="\r\n\r\nEndpoint descriptor:";
+const char End_Address_str[] PROGMEM ="\r\nEndpoint address:\t";
+const char End_Attr_str[] PROGMEM ="\r\nAttr.:\t\t\t";
+const char End_Pktsize_str[] PROGMEM ="\r\nMax.pkt size:\t\t";
+const char End_Interval_str[] PROGMEM ="\r\nPolling interval:\t";
+const char Unk_Header_str[] PROGMEM = "\r\nUnknown descriptor:";
+const char Unk_Length_str[] PROGMEM ="\r\nLength:\t\t";
+const char Unk_Type_str[] PROGMEM ="\r\nType:\t\t";
+const char Unk_Contents_str[] PROGMEM ="\r\nContents:\t";
+ 
+#ifndef pgm_read_byte
+#define pgm_read_byte(addr) (*(const unsigned char *)(addr))
+#endif
+#ifndef pgm_read_word
+#define pgm_read_word(addr) (*(const unsigned short *)(addr))
+#endif
+#ifndef pgm_read_dword
+#define pgm_read_dword(addr) (*(const unsigned long *)(addr))
+#endif
+#ifndef pgm_read_float
+#define pgm_read_float(addr) (*(const float *)(addr))
+#endif
+
+#ifndef pgm_read_byte_near
+#define pgm_read_byte_near(addr) pgm_read_byte(addr)
+#endif
+#ifndef pgm_read_word_near
+#define pgm_read_word_near(addr) pgm_read_word(addr)
+#endif
+#ifndef pgm_read_dword_near
+#define pgm_read_dword_near(addr) pgm_read_dword(addr)
+#endif
+#ifndef pgm_read_float_near
+#define pgm_read_float_near(addr) pgm_read_float(addr)
+#endif
+#ifndef pgm_read_byte_far
+#define pgm_read_byte_far(addr) pgm_read_byte(addr)
+#endif
+#ifndef pgm_read_word_far
+#define pgm_read_word_far(addr) pgm_read_word(addr)
+#endif
+#ifndef pgm_read_dword_far
+#define pgm_read_dword_far(addr) pgm_read_dword(addr)
+#endif
+#ifndef pgm_read_float_far
+#define pgm_read_float_far(addr) pgm_read_float(addr)
+#endif
+
+#ifndef pgm_read_pointer
+#define pgm_read_pointer
+#endif
+
+
+
 
 class Shape {
 	
@@ -70,6 +166,23 @@ class Box : public Shape{
 		}
 		virtual void test_method();
 };
+
+
+class HIDUniversal2 : public HIDUniversal
+{
+public:
+    HIDUniversal2(USB *usb) : HIDUniversal(usb) {};
+
+protected:
+    uint8_t OnInitSuccessful();
+};
+
+uint8_t HIDUniversal2::OnInitSuccessful()
+{ 
+    printf("rcode : init success\n");
+
+    return 0;
+}
 
 
 
@@ -104,9 +217,153 @@ void halt55() {
         }
 }
 
+
+/* Print a string from Program Memory directly to save RAM */
+void printProgStr(const char* str)
+{
+  char c;
+  if (!str) return;
+  while ((c = pgm_read_byte(str++)))
+    printf("%c",c);
+}
+
 void  print_hex(int hex_value){
 	printf("%x",hex_value);
 };
+
+
+uint8_t isGetConfDescrSuccess(USB *usb, uint8_t addr, uint8_t conf )
+{
+
+  uint8_t buf[ BUFSIZE ]; 
+  uint8_t rcode; 
+  uint16_t total_length;
+  rcode = usb->getConfDescr( addr, 0, 4, conf, buf );  //get total length
+  LOBYTE( total_length ) = buf[ 2 ];
+  HIBYTE( total_length ) = buf[ 3 ];
+  if ( total_length > 256 ) {   //check if total length is larger than buffer
+    printf("Total length truncated to 256 bytes");
+    total_length = 256;
+  }
+  return ( rcode );
+}
+
+/* function to print configuration descriptor */
+void printconfdescr( uint8_t* descr_ptr )
+{
+  USB_CONFIGURATION_DESCRIPTOR* conf_ptr = ( USB_CONFIGURATION_DESCRIPTOR* )descr_ptr;
+  printProgStr(Conf_Header_str);
+  printProgStr(Conf_Totlen_str);
+  print_hex( conf_ptr->wTotalLength);
+  printProgStr(Conf_Nint_str);
+  print_hex( conf_ptr->bNumInterfaces);
+  printProgStr(Conf_Value_str);
+  print_hex( conf_ptr->bConfigurationValue );
+  printProgStr(Conf_String_str);
+  print_hex( conf_ptr->iConfiguration);
+  printProgStr(Conf_Attr_str);
+  print_hex( conf_ptr->bmAttributes);
+  printProgStr(Conf_Pwr_str);
+  print_hex( conf_ptr->bMaxPower);
+  return;
+}
+/* function to print interface descriptor */
+void printintfdescr( uint8_t* descr_ptr )
+{
+  USB_INTERFACE_DESCRIPTOR* intf_ptr = ( USB_INTERFACE_DESCRIPTOR* )descr_ptr;
+  printProgStr(Int_Header_str);
+  printProgStr(Int_Number_str);
+  print_hex( intf_ptr->bInterfaceNumber );
+  printProgStr(Int_Alt_str);
+  print_hex( intf_ptr->bAlternateSetting);
+  printProgStr(Int_Endpoints_str);
+  print_hex( intf_ptr->bNumEndpoints );
+  printProgStr(Int_Class_str);
+  print_hex( intf_ptr->bInterfaceClass);
+  printProgStr(Int_Subclass_str);
+  print_hex( intf_ptr->bInterfaceSubClass);
+  printProgStr(Int_Protocol_str);
+  print_hex( intf_ptr->bInterfaceProtocol);
+  printProgStr(Int_String_str);
+  print_hex( intf_ptr->iInterface );
+  return;
+}
+/* function to print endpoint descriptor */
+void printepdescr( uint8_t* descr_ptr )
+{
+  USB_ENDPOINT_DESCRIPTOR* ep_ptr = ( USB_ENDPOINT_DESCRIPTOR* )descr_ptr;
+  printProgStr(End_Header_str);
+  printProgStr(End_Address_str);
+  print_hex( ep_ptr->bEndpointAddress );
+  printProgStr(End_Attr_str);
+  print_hex( ep_ptr->bmAttributes);
+  printProgStr(End_Pktsize_str);
+  print_hex( ep_ptr->wMaxPacketSize );
+  printProgStr(End_Interval_str);
+  print_hex( ep_ptr->bInterval );
+
+  return;
+}
+/*function to print unknown descriptor */
+void printunkdescr( uint8_t* descr_ptr )
+{
+  uint8_t length = *descr_ptr;
+  uint8_t i;
+  printProgStr(Unk_Header_str);
+  printProgStr(Unk_Length_str);
+  print_hex( *descr_ptr );
+  printProgStr(Unk_Type_str);
+  print_hex( *(descr_ptr + 1 ) );
+  printProgStr(Unk_Contents_str);
+  descr_ptr += 2;
+  for ( i = 0; i < length; i++ ) {
+    print_hex( *descr_ptr);
+    descr_ptr++;
+  }
+}
+
+
+
+uint8_t getconfdescr(USB *usb, uint8_t addr, uint8_t conf )
+{
+  uint8_t buf[ BUFSIZE ];
+  uint8_t* buf_ptr = buf;
+  uint8_t rcode;
+  uint8_t descr_length;
+  uint8_t descr_type;
+  uint16_t total_length;
+  rcode = usb->getConfDescr( addr, 0, 4, conf, buf );  //get total length
+  LOBYTE( total_length ) = buf[ 2 ];
+  HIBYTE( total_length ) = buf[ 3 ];
+  if ( total_length > 256 ) {   //check if total length is larger than buffer
+    printf("Total length truncated to 256 bytes");
+    total_length = 256;
+  }
+  rcode = usb->getConfDescr( addr, 0, total_length, conf, buf ); //get the whole descriptor
+  while ( buf_ptr < buf + total_length ) { //parsing descriptors
+    descr_length = *( buf_ptr );
+    descr_type = *( buf_ptr + 1 );
+    switch ( descr_type ) {
+      case ( USB_DESCRIPTOR_CONFIGURATION ):
+        printconfdescr( buf_ptr );
+        break;
+      case ( USB_DESCRIPTOR_INTERFACE ):
+        printintfdescr( buf_ptr );
+        break;
+      case ( USB_DESCRIPTOR_ENDPOINT ):
+        printepdescr( buf_ptr );
+        break;
+      case 0x29:
+        printf("No Hub descriptor handler");
+        break;
+      default:
+        printunkdescr( buf_ptr );
+        break;
+    }//switch( descr_type
+    buf_ptr = ( buf_ptr + descr_length );    //advance buffer pointer
+  }//while( buf_ptr <=...
+  return ( rcode );
+}
 
 
 void uhs_complete_test(void *pvParameter){ 
@@ -120,6 +377,7 @@ void uhs_complete_test(void *pvParameter){
 
    
 	USB Usb;
+	HIDUniversal2 Hid(&Usb);
 	Usb.Init();
 	vTaskDelay(1000 / 100);
 	{
@@ -278,9 +536,20 @@ void uhs_complete_test(void *pvParameter){
                                         print_hex(buf.iSerialNumber);
                                         printf("\r\nNumber of conf.:\t");
                                         print_hex(buf.bNumConfigurations);
+                                        
+                                        rcode = isGetConfDescrSuccess(&Usb,1,0);
+                                        if (rcode) {
+										  printf("\r\nError reading conf descriptor. Error code ");
+										  print_hex(rcode);
+										} else {
+										  printf("\r\nSuccess reading conf descriptor.");
+										  getconfdescr(&Usb,1,0);
+										}
+                                        
                                         /**/
-                                        printf("\r\n\nAll tests passed. Press RESET to restart test");
                                         while(1) {
+												vTaskDelay(1000 / 100);
+												printf("\r\n\nAll tests passed. Press RESET to restart test");
                                                 yield(); // needed in order to reset the watchdog timer on the ESP8266
                                         }
                                 }

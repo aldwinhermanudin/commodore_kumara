@@ -30,6 +30,9 @@ USB::USB() : bmHubPre(0) {
 /* Initialize data structures */
 void USB::init() {
         //devConfigIndex = 0;
+        for (int i = 0; i < USB_NUMDEVICES; i++){
+			devConfig[i] = NULL;
+		}
         bmHubPre = 0;
 }
 
@@ -46,8 +49,22 @@ AddressPool& USB::GetAddressPool() {
 }
 
 uint8_t USB::RegisterDeviceClass(USBDeviceConfig *pdev) {
+	
+	//devConfig[0] = NULL;
+	/*
+	for(uint8_t i = 0; i < USB_NUMDEVICES; i++) {
+		if (!devConfig[i]){
+			printf("devConfig %d : available\n", i);
+		}
+		else {
+			printf("devConfig %d : not available\n", i);
+		}
+		printf("devconfig %d value : %p\n", i, devConfig[i]);
+	}
+	*/
 	for(uint8_t i = 0; i < USB_NUMDEVICES; i++) {
 		if(!devConfig[i]) {
+			//printf("assigning data to pDev\n");
 			devConfig[i] = pdev;
 			return 0;
 		}
@@ -484,7 +501,7 @@ void USB::Task(void) //USB state machine
                         }
                         break;
         }// switch( tmpdata
-
+		
         for(uint8_t i = 0; i < USB_NUMDEVICES; i++)
                 if(devConfig[i])
                         rcode = devConfig[i]->Poll();
