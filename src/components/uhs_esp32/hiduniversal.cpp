@@ -366,6 +366,7 @@ void HIDUniversal::SaveBuffer(uint8_t len, uint8_t *src, uint8_t *dest) {
 }
 
 uint8_t HIDUniversal::Poll() {
+		//printf("Polling HID\n");
         uint8_t rcode = 0;
 
         if(!bPollEnable)
@@ -399,23 +400,21 @@ uint8_t HIDUniversal::Poll() {
 
                         if(identical)
                                 return 0;
-#if 0
-                        Notify(PSTR("\r\nBuf: "), 0x80);
 
-                        for(uint8_t i = 0; i < read; i++) {
-                                D_PrintHex<uint8_t > (buf[i], 0x80);
-                                Notify(PSTR(" "), 0x80);
-                        }
 
-                        Notify(PSTR("\r\n"), 0x80);
-#endif
                         ParseHIDData(this, bHasReportId, (uint8_t)read, buf);
 
                         HIDReportParser *prs = GetReportParser(((bHasReportId) ? *buf : 0));
-						printf("Parsing");
+						
+						printf("Parsing\n");
+						printf("Data :\n");
+						for ( uint8_t i = 0; i < read; i++){							
+							printf("Buffer %d : %x\n",i, buf[i]);
+						}
+						printf("\n");
                         if(prs)
                                 prs->Parse(this, bHasReportId, (uint8_t)read, buf);
-                        printf("Finished Parsing");
+                        printf("Finished Parsing\n");
                 }
         }
         return rcode;
