@@ -200,7 +200,7 @@ void uhs_complete_test(void *pvParameter){
 	}//check revision register
      		
 	while (1){
-		//vTaskDelay(100 / 100);
+		vTaskDelay(100 / 100); // temporarily fix twdt timeout
 		Usb.Task();
 	}
 }

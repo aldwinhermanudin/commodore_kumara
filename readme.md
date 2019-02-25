@@ -14,5 +14,5 @@
 - [x] Port hiduniversal code
 - [x] Test simple Device Enumeration
 - [x] Test HID Universal
-- [ ] Fix TWDT timeout
+- [x] Fix TWDT timeout (temporarily fix by adding delay in while(1))
 - [ ] Create own HID Parser (Last progress is in hiduniversal.h : Line 411) 

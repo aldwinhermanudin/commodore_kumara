@@ -27,6 +27,8 @@ bHasReportId(false) {
 
         if(pUsb)
                 pUsb->RegisterDeviceClass(this);
+        keyStroke = 0;
+        validKeyStroke = 0;
         printf("HID Universal Init\n");
 }
 
@@ -405,13 +407,21 @@ uint8_t HIDUniversal::Poll() {
                         ParseHIDData(this, bHasReportId, (uint8_t)read, buf);
 
                         HIDReportParser *prs = GetReportParser(((bHasReportId) ? *buf : 0));
-						
-						printf("Parsing\n");
-						printf("Data :\n");
-						for ( uint8_t i = 0; i < read; i++){							
-							printf("Buffer %d : %x\n",i, buf[i]);
+#ifdef AL_DEBUG						
+						keyStroke++;
+						if (read == 8) {validKeyStroke = validKeyStroke + 1;}
+						printf("keyStroke : %d\n", keyStroke);
+						printf("validKeyStroke : %d\n", validKeyStroke);
+#endif
+						// only parse keyboard stroke
+						if (read == 8) {
+							printf("Parsing\n");
+							printf("Data :\n");
+							for ( uint8_t i = 0; i < read; i++){							
+								printf("Buffer %d : %x\n",i, buf[i]);
+							}
+							printf("\n");
 						}
-						printf("\n");
                         if(prs)
                                 prs->Parse(this, bHasReportId, (uint8_t)read, buf);
                         printf("Finished Parsing\n");

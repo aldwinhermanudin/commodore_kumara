@@ -19,6 +19,7 @@ e-mail   :  support@circuitsathome.com
 #define __HIDUNIVERSAL_H__
 
 #include "usbhid.h"
+#define AL_DEBUG
 //#include "hidescriptorparser.h"
 
 class HIDUniversal : public USBHID {
@@ -103,6 +104,10 @@ public:
 
         // Send report - do not mix with SetReport()!
         uint8_t SndRpt(uint16_t nbytes, uint8_t *dataptr);
+#ifdef AL_DEBUG
+        uint8_t keyStroke;
+        uint8_t validKeyStroke;
+#endif
 };
 
 #endif // __HIDUNIVERSAL_H__
